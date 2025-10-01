@@ -2,63 +2,18 @@ import streamlit as st
 import random
 from datetime import datetime
 
-# --- CSS 스타일 정의 (CSS Grid를 모방하여 완벽한 격자 구조 구현) ---
-
-# 셀 크기
-CELL_SIZE = "35px"
-THICK_BORDER = "3px solid black"
-THIN_BORDER = "1px solid #ccc"
-
-CELL_STYLE = f"""
+# --- CSS 스타일 정의 (간단하게 필수 스타일만 유지) ---
+# *주의*: 셀의 크기 고정 및 3x3 보더는 이제 아래의 main_app 함수 내에서 인라인 CSS로 처리됩니다.
+CELL_STYLE = """
 <style>
-/* 1. 스도쿠 그리드 컨테이너 스타일 (Grid 레이아웃 구현) */
-.sudoku-grid {{
-    display: grid;
-    /* 9개의 동일한 크기(CELL_SIZE)를 가진 컬럼을 정의 */
-    grid-template-columns: repeat(9, {CELL_SIZE});
-    width: fit-content; /* 그리드 너비를 내용물에 맞춤 */
-    margin: 20px auto; /* 중앙 정렬 */
-    border-top: {THICK_BORDER}; /* 전체 보드의 위쪽 테두리 */
-    border-left: {THICK_BORDER}; /* 전체 보드의 왼쪽 테두리 */
-}}
-
-/* 2. 일반적인 Streamlit 위젯 마진/패딩 초기화 */
-div[data-testid="stTextInput"], 
-div[data-testid="stHorizontalBlock"] > div[data-testid^="stVerticalBlock"] > div {{
-    margin: 0 !important; 
+/* 모든 텍스트 입력 필드의 컨테이너 마진 조정 */
+div[data-testid="stTextInput"] {
+    margin: -10px 0 !important; 
     padding: 0 !important;
-}}
-
-/* 3. 셀 입력 필드 자체 스타일: 크기 고정 및 중앙 정렬 */
-div[data-testid="stTextInput"] > div > input {{
-    text-align: center !important;
-    font-weight: bold;
-    font-size: 1.2em !important;
-    padding: 0 !important;
-    height: {CELL_SIZE} !important; 
-    width: {CELL_SIZE} !important;
-    box-sizing: border-box;
-    margin: 0;
-    border: none; /* 개별 셀의 테두리는 부모 요소가 담당 */
-    border-radius: 0;
-}}
-
-/* 4. 고정된 셀 (fixed-cell) 스타일 */
-.fixed-cell {{
-    text-align: center;
-    font-weight: bold;
-    font-size: 1.2em;
-    height: {CELL_SIZE}; 
-    line-height: {CELL_SIZE}; /* 수직 중앙 정렬 */
-    width: {CELL_SIZE};
-    background-color: #f0f2f6; 
-    color: black;
-    box-sizing: border-box;
-    margin: 0;
-}}
+}
 
 /* 🏆 모든 Streamlit 버튼 디자인 통일 🏆 */
-.stButton > button {{
+.stButton > button {
     background-color: #4CAF50; 
     color: white;             
     border: none;             
@@ -68,17 +23,18 @@ div[data-testid="stTextInput"] > div > input {{
     cursor: pointer;
     border-radius: 8px;       
     transition: background-color 0.3s;
-}}
-.stButton > button:hover {{
+}
+
+.stButton > button:hover {
     background-color: #45a049; 
-}}
+}
 
 /* Streamlit에서 생성되는 경고 메시지 스타일 숨기기 */
-.stAlert {{
+.stAlert {
     margin-top: 0;
     margin-bottom: 0;
     padding: 10px;
-}}
+}
 </style>
 """
 
@@ -154,7 +110,6 @@ def shuffle_click(initial_run=False):
     st.rerun() 
 
 def update_cell_value(r, c):
-    """텍스트 입력 필드가 변경될 때 호출됩니다."""
     new_val = st.session_state[f"cell_{r}_{c}"].strip()
     
     if new_val.isdigit() and 1 <= int(new_val) <= 9:
@@ -167,7 +122,6 @@ def update_cell_value(r, c):
         st.session_state[f"cell_{r}_{c}"] = st.session_state.board[r][c]
         
 def complete_test_click():
-    """채점 로직을 실행합니다."""
     st.session_state.timer_running = False 
 
     is_correct = True
@@ -239,15 +193,24 @@ def main_app():
     st.info(st.session_state.result_message)
     st.markdown("---")
 
+    # --- Sudoku 그리드 영역 ---
 
-    # --- Sudoku 그리드 영역 (CSS Grid 컨테이너 사용) ---
-    
-    # Grid 컨테이너 시작
-    st.markdown('<div class="sudoku-grid">', unsafe_allow_html=True)
-    
+    # 💡 9x9 격자판 전체의 테두리(왼쪽/위쪽)를 그리는 컨테이너
+    st.markdown(f"""
+    <div style="border-top: 3px solid black; border-left: 3px solid black; width: fit-content; margin: 0 auto;">
+    """, unsafe_allow_html=True)
+
+    CELL_SIZE_PX = "35px"
+    THIN_BORDER_STYLE = "1px solid #ccc"
+    THICK_BORDER_STYLE = "3px solid black"
+
     for i in range(9):
+        # 9개의 균등한 컬럼을 생성합니다. (내부 요소는 크기가 고정됨)
+        # 이 방식으로 컬럼 간격을 최소화합니다.
+        cols = st.columns([1]*9) 
+        
         # 현재 행이 3x3 블록의 아래 경계선인지 확인 (인덱스 2와 5)
-        is_thick_row = i in [2, 5]
+        is_thick_row = i == 8 or i in [2, 5]
         
         for j in range(9):
             is_initial_cell = (i, j) in st.session_state.initial_cells
@@ -256,52 +219,62 @@ def main_app():
             cell_color = st.session_state.cell_colors.get((i, j), 'red')
             
             # 3x3 블록 구분선을 계산하는 코드
-            is_thick_col = j in [2, 5]
+            # 현재 열이 3x3 블록의 오른쪽 경계선인지 확인 (인덱스 2와 5)
+            is_thick_col = j == 8 or j in [2, 5]
             
-            # 경계선 스타일 정의: 3x3 구분선은 굵게, 나머지는 얇게
-            # Grid 방식에서는 오른쪽과 아래쪽 테두리만 조건부로 적용
-            border_right_style = THICK_BORDER if is_thick_col else THIN_BORDER
-            border_bottom_style = THICK_BORDER if is_thick_row else THIN_BORDER
-            
-            # 셀을 담을 Grid 아이템 컨테이너 시작 (스타일 적용)
-            st.markdown(f'<div style="border-right: {border_right_style}; border-bottom: {border_bottom_style};">', unsafe_allow_html=True)
-            
+            # 경계선 스타일 정의
+            border_right_style = THICK_BORDER_STYLE if is_thick_col else THIN_BORDER_STYLE
+            border_bottom_style = THICK_BORDER_STYLE if is_thick_row else THIN_BORDER_STYLE
+
+            # 셀 스타일 문자열
+            cell_base_style = f"width: {CELL_SIZE_PX}; height: {CELL_SIZE_PX}; box-sizing: border-box; text-align: center; margin: 0; padding: 0; border-right: {border_right_style}; border-bottom: {border_bottom_style};"
+
             if is_initial_cell:
-                # 고정된 셀
+                # 고정된 셀 (fixed-cell)
                 cell_html = f"""
-                <div class="fixed-cell">
+                <div style="{cell_base_style} font-weight: bold; font-size: 1.2em; line-height: {CELL_SIZE_PX}; background-color: #f0f2f6; color: black;">
                     {current_val}
                 </div>
                 """
-                st.markdown(cell_html, unsafe_allow_html=True)
+                cols[j].markdown(cell_html, unsafe_allow_html=True)
             else:
                 # 사용자 입력 가능 셀
-                # **주의**: st.text_input을 Grid 내부에서 직접 사용하면 레이아웃이 깨지기 쉬우므로,
-                # 여기서는 st.columns 대신 Grid의 개별 아이템으로 렌더링하는 방식을 사용합니다.
                 
-                # 인라인 스타일 주입으로 텍스트 색상만 제어
-                st.markdown(f"""
+                # 1. input 태그 자체의 크기와 보더를 인라인으로 강제 주입
+                cols[j].markdown(f"""
                 <style>
                 div[data-testid="stTextInput"] input[key="{cell_key}"] {{
+                    /* 크기 고정 및 테두리 인라인으로 강제 */
+                    width: {CELL_SIZE_PX} !important; 
+                    height: {CELL_SIZE_PX} !important;
+                    margin: 0 !important;
+                    border-right: {border_right_style} !important;
+                    border-bottom: {border_bottom_style} !important;
+                    
+                    /* 폰트 색상 */
                     color: {cell_color} !important;
+                    
+                    /* 기본 보더는 투명하게 처리하거나 없애서 인라인 보더만 보이도록 합니다 */
+                    border-top: 1px solid transparent !important;
+                    border-left: 1px solid transparent !important;
                 }}
                 </style>
                 """, unsafe_allow_html=True)
                 
-                # st.text_input 위젯 (Grid 아이템 안에 삽입)
-                st.text_input(" ", 
-                               value=current_val, 
-                               max_chars=1, 
-                               key=cell_key, 
-                               on_change=update_cell_value, 
-                               args=(i, j),
-                               label_visibility="collapsed",
-                               placeholder=" ")
+                # 2. st.text_input 위젯
+                cols[j].text_input(" ", 
+                                   value=current_val, 
+                                   max_chars=1, 
+                                   key=cell_key, 
+                                   on_change=update_cell_value, 
+                                   args=(i, j),
+                                   label_visibility="collapsed",
+                                   placeholder=" ")
             
-            # 셀을 담을 Grid 아이템 컨테이너 닫기
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-    # Grid 컨테이너 닫기
+        # 컬럼 간격 최소화 (이 부분이 없어도 CSS가 작동하지만, 안정성 확보)
+        st.markdown('<div style="height: 0px; margin-top: -10px;"></div>', unsafe_allow_html=True)
+        
+    # 💡 9x9 격자판 전체의 테두리 닫기
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("---")
             
