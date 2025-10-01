@@ -214,6 +214,7 @@ def main_app():
                     color: {cell_color} !important;
                     border: {border_style} !important;
                     text-align: center !important;
+                    font-size: 1.2em
                     font-weight: bold !important;
                     /* 너비/높이 100%를 사용하여 컬럼 공간을 채우고, 9x9 행렬을 만듭니다 */
                     width: 100% !important; 
@@ -238,5 +239,6 @@ def main_app():
             
 if __name__ == "__main__":
     main_app()
+
 
 
