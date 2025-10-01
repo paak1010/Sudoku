@@ -19,7 +19,7 @@ div[data-testid="stTextInput"] > div > input {
     width: 100% !important; 
     box-sizing: border-box;
     margin: 0;
-    border: 1px solid #ccc;
+    border: 1px solid #ccc; /* 스도쿠 셀의 경계선 */
     border-radius: 0px;
 }
 
@@ -37,24 +37,30 @@ div[data-testid="stTextInput"] > div > input {
     margin: 0;
 }
 
-/* 🏆 모든 Streamlit 버튼 디자인 통일 🏆 */
+/* 🏆 모든 Streamlit 버튼 디자인 통일 및 간격 조정 🏆 */
+.stButton {
+    /* 버튼 컨테이너에 마진을 주어 버튼 간 간격을 확보 */
+    margin: 3px 0; 
+}
+
 .stButton > button {
-    background-color: #4CAF50; 
-    color: white;             
-    border: none;             
-    padding: 10px 15px;       
+    background-color: #4CAF50; /* 통일된 배경색 (녹색 계열) */
+    color: white;             /* 글자색 흰색 */
+    border: 1px solid transparent; /* 👈 투명한 얇은 테두리로 버튼 자체 선 제거 */
+    padding: 8px 15px;        /* 패딩 */
     text-align: center;
     text-decoration: none;
     display: inline-block;
-    font-size: 16px;          
-    margin: 4px 2px;
+    font-size: 16px;          /* 폰트 크기 */
     cursor: pointer;
-    border-radius: 8px;       
+    border-radius: 4px;       /* 둥근 모서리 */
     transition: background-color 0.3s;
+    /* 버튼 자체의 수직/수평 마진을 줄여서 컨테이너 마진이 작용하도록 함 */
+    margin: 0;
 }
 
 .stButton > button:hover {
-    background-color: #45a049; 
+    background-color: #45a049; /* 호버 시 색상 변경 */
 }
 
 /* Streamlit에서 생성되는 경고 메시지 스타일 숨기기 */
@@ -251,11 +257,11 @@ def main_app():
             cell_key = f"cell_{i}_{j}"
             cell_color = st.session_state.cell_colors.get((i, j), 'red')
             
-            # 🏆 3x3 블록 구분선을 다시 계산하는 코드 🏆
-            # 현재 열이 3x3 블록의 오른쪽 경계선인지 확인 (인덱스 2와 5)
+            # 3x3 블록 구분선을 계산하는 코드
             is_thick_col = j in [2, 5]
             
             # 경계선 스타일 정의
+            # 3x3 구분선은 굵게, 나머지 선은 얇게
             border_right_style = "3px solid black" if is_thick_col else "1px solid #ccc"
             border_bottom_style = "3px solid black" if is_thick_row else "1px solid #ccc"
 
