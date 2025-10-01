@@ -39,22 +39,22 @@ div[data-testid="stTextInput"] > div > input {
 
 /* 🏆 모든 Streamlit 버튼 디자인 통일 🏆 */
 .stButton > button {
-    background-color: #4CAF50; /* 통일된 배경색 (녹색 계열) */
-    color: white;             /* 글자색 흰색 */
-    border: none;             /* 테두리 제거 */
-    padding: 10px 15px;       /* 패딩 */
+    background-color: #4CAF50; 
+    color: white;             
+    border: none;             
+    padding: 10px 15px;       
     text-align: center;
     text-decoration: none;
     display: inline-block;
-    font-size: 16px;          /* 폰트 크기 */
+    font-size: 16px;          
     margin: 4px 2px;
     cursor: pointer;
-    border-radius: 8px;       /* 둥근 모서리 */
+    border-radius: 8px;       
     transition: background-color 0.3s;
 }
 
 .stButton > button:hover {
-    background-color: #45a049; /* 호버 시 색상 변경 */
+    background-color: #45a049; 
 }
 
 /* Streamlit에서 생성되는 경고 메시지 스타일 숨기기 */
@@ -239,6 +239,9 @@ def main_app():
     # --- Sudoku 그리드 영역 ---
     
     for i in range(9):
+        # 현재 행이 3x3 블록의 아래 경계선인지 확인 (인덱스 2와 5)
+        is_thick_row = i in [2, 5]
+        
         # 9개의 균등한 컬럼을 생성합니다.
         cols = st.columns(9)
         
@@ -248,9 +251,13 @@ def main_app():
             cell_key = f"cell_{i}_{j}"
             cell_color = st.session_state.cell_colors.get((i, j), 'red')
             
-            # 💡 수정된 부분: 굵은 경계선 대신 얇은 경계선으로 통일 💡
-            border_right_style = "1px solid #ccc"
-            border_bottom_style = "1px solid #ccc"
+            # 🏆 3x3 블록 구분선을 다시 계산하는 코드 🏆
+            # 현재 열이 3x3 블록의 오른쪽 경계선인지 확인 (인덱스 2와 5)
+            is_thick_col = j in [2, 5]
+            
+            # 경계선 스타일 정의
+            border_right_style = "3px solid black" if is_thick_col else "1px solid #ccc"
+            border_bottom_style = "3px solid black" if is_thick_row else "1px solid #ccc"
 
             if is_initial_cell:
                 # 고정된 셀
