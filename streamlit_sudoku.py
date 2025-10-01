@@ -2,34 +2,49 @@ import streamlit as st
 import random
 from datetime import datetime
 
-# --- CSS 스타일 정의 (버튼 디자인 통일 포함) ---
+# --- CSS 스타일 정의 (셀 크기 고정 및 간격 제거) ---
 CELL_STYLE = """
 <style>
-/* 모든 텍스트 입력 필드의 컨테이너 스타일 */
-div[data-testid="stTextInput"] {
-    margin: -10px 0; 
+/* 1. 스도쿠 그리드 컨테이너 스타일 */
+/* Streamlit 메인 컨테이너의 패딩을 조정하여 그리드를 중앙에 가깝게 만듭니다. */
+.stApp {
+    padding-top: 20px;
 }
 
-/* 셀 입력 필드 자체 스타일 */
+/* 2. Streamlit 컬럼 컨테이너의 간격 제거 */
+/* Streamlit 컬럼의 기본 패딩/마진을 0으로 설정하여 셀들을 밀착시킵니다. */
+div[data-testid^="stHorizontalBlock"] > div[data-testid^="stVerticalBlock"] > div {
+    padding: 0px !important;
+    margin: 0px !important;
+}
+
+/* 3. 입력 필드 컨테이너 스타일 (가장 중요) */
+div[data-testid="stTextInput"] {
+    margin: 0 !important; 
+    padding: 0 !important;
+}
+
+/* 4. 셀 입력 필드 자체 스타일: 크기 고정 및 중앙 정렬 */
 div[data-testid="stTextInput"] > div > input {
     text-align: center !important;
     font-size: 1.2em !important;
-    padding: 0px !important;
-    height: 35px !important;
-    width: 100% !important; 
+    padding: 0 !important;
+    height: 35px !important; /* 높이 고정 */
+    width: 35px !important;  /* 너비 고정 (정사각형 모양) */
     box-sizing: border-box;
     margin: 0;
-    border: 1px solid #ccc; /* 스도쿠 셀의 경계선 */
+    border: 1px solid #ccc; /* 얇은 기본 경계선 */
     border-radius: 0px;
 }
 
-/* 고정된 셀 (fixed-cell) 스타일 */
+/* 5. 고정된 셀 (fixed-cell) 스타일 */
 .fixed-cell {
     text-align: center;
     font-weight: bold;
     font-size: 1.2em;
-    height: 35px;
-    line-height: 35px;
+    height: 35px; /* 높이 고정 */
+    width: 35px;  /* 너비 고정 */
+    line-height: 35px; /* 수직 중앙 정렬 */
     background-color: #f0f2f6; 
     color: black;
     border: 1px solid #ccc;
@@ -37,30 +52,25 @@ div[data-testid="stTextInput"] > div > input {
     margin: 0;
 }
 
-/* 🏆 모든 Streamlit 버튼 디자인 통일 및 간격 조정 🏆 */
+/* 🏆 모든 Streamlit 버튼 디자인 통일 🏆 */
 .stButton {
-    /* 버튼 컨테이너에 마진을 주어 버튼 간 간격을 확보 */
     margin: 3px 0; 
 }
 
 .stButton > button {
-    background-color: #4CAF50; /* 통일된 배경색 (녹색 계열) */
-    color: white;             /* 글자색 흰색 */
-    border: 1px solid transparent; /* 👈 투명한 얇은 테두리로 버튼 자체 선 제거 */
-    padding: 8px 15px;        /* 패딩 */
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;          /* 폰트 크기 */
+    background-color: #4CAF50; 
+    color: white;             
+    border: 1px solid transparent; 
+    padding: 8px 15px;        
+    font-size: 16px;          
     cursor: pointer;
-    border-radius: 4px;       /* 둥근 모서리 */
+    border-radius: 4px;       
     transition: background-color 0.3s;
-    /* 버튼 자체의 수직/수평 마진을 줄여서 컨테이너 마진이 작용하도록 함 */
     margin: 0;
 }
 
 .stButton > button:hover {
-    background-color: #45a049; /* 호버 시 색상 변경 */
+    background-color: #45a049; 
 }
 
 /* Streamlit에서 생성되는 경고 메시지 스타일 숨기기 */
@@ -69,7 +79,6 @@ div[data-testid="stTextInput"] > div > input {
     margin-bottom: 0;
     padding: 10px;
 }
-
 </style>
 """
 
@@ -106,7 +115,7 @@ def initialize_session_state():
         shuffle_click(initial_run=True)
 
 
-# --- 게임 로직 함수 ---
+# --- 게임 로직 함수 (변경 없음) ---
 
 def shuffle_click(initial_run=False):
     """보드를 셔플하고 새 게임을 시작합니다."""
@@ -154,7 +163,6 @@ def update_cell_value(r, c):
     """텍스트 입력 필드가 변경될 때 호출됩니다."""
     new_val = st.session_state[f"cell_{r}_{c}"].strip()
     
-    # 1~9 사이의 숫자만 허용하고, 그 외는 빈 값으로 처리
     if new_val.isdigit() and 1 <= int(new_val) <= 9:
         st.session_state.board[r][c] = new_val
         st.session_state.cell_colors[(r, c)] = 'red' 
@@ -162,7 +170,6 @@ def update_cell_value(r, c):
         st.session_state.board[r][c] = ""
         st.session_state.cell_colors[(r, c)] = 'red' 
     else:
-        # 잘못된 입력은 무시하고 이전 값으로 롤백하여 UI에 표시
         st.session_state[f"cell_{r}_{c}"] = st.session_state.board[r][c]
         
 def complete_test_click():
@@ -171,14 +178,12 @@ def complete_test_click():
 
     is_correct = True
     
-    # 시간 계산 및 저장
     elapsed_time = datetime.now() - st.session_state.game_start_time
     minutes = int(elapsed_time.total_seconds() // 60)
     seconds = int(elapsed_time.total_seconds() % 60)
     current_time_display = f"{minutes:02d}:{seconds:02d}"
     st.session_state.time_finished_display = current_time_display
 
-    # 채점 및 색상 결정
     for i in range(9):
         for j in range(9):
             current_val = st.session_state.board[i][j]
@@ -193,7 +198,6 @@ def complete_test_click():
             else:
                 st.session_state.cell_colors[(i, j)] = 'black'
 
-    # 결과 메시지 출력
     if is_correct:
         st.session_state.result_message = f"✅ 정답입니다! 퍼즐을 풀었습니다. 소요 시간: {current_time_display}"
         st.balloons()
@@ -241,61 +245,67 @@ def main_app():
     st.info(st.session_state.result_message)
     st.markdown("---")
 
+    # 💡 9x9 그리드를 중앙에 정렬하기 위한 꼼수: 중앙 컬럼을 사용합니다.
+    col_left, col_board, col_right = st.columns([1, 4, 1])
 
-    # --- Sudoku 그리드 영역 ---
-    
-    for i in range(9):
-        # 현재 행이 3x3 블록의 아래 경계선인지 확인 (인덱스 2와 5)
-        is_thick_row = i in [2, 5]
-        
-        # 9개의 균등한 컬럼을 생성합니다.
-        cols = st.columns(9)
-        
-        for j in range(9):
-            is_initial_cell = (i, j) in st.session_state.initial_cells
-            current_val = st.session_state.board[i][j]
-            cell_key = f"cell_{i}_{j}"
-            cell_color = st.session_state.cell_colors.get((i, j), 'red')
+    with col_board:
+        # --- Sudoku 그리드 영역 ---
+        for i in range(9):
+            is_thick_row = i in [2, 5]
             
-            # 3x3 블록 구분선을 계산하는 코드
-            is_thick_col = j in [2, 5]
+            # 9개의 균등한 컬럼을 생성합니다. (너비를 균등하게 나누기)
+            # 여기서는 9개의 컬럼을 사용하되, CSS로 셀 크기를 고정했기 때문에
+            # 컬럼의 기본 간격이 제거되어야 그리드가 붙어 보입니다.
+            cols = st.columns([1] * 9)
             
-            # 경계선 스타일 정의
-            # 3x3 구분선은 굵게, 나머지 선은 얇게
-            border_right_style = "3px solid black" if is_thick_col else "1px solid #ccc"
-            border_bottom_style = "3px solid black" if is_thick_row else "1px solid #ccc"
-
-            if is_initial_cell:
-                # 고정된 셀
-                cell_html = f"""
-                <div class="fixed-cell" style="border-right: {border_right_style}; border-bottom: {border_bottom_style};">
-                    {current_val}
-                </div>
-                """
-                cols[j].markdown(cell_html, unsafe_allow_html=True)
-            else:
-                # 사용자 입력 가능 셀
-                cols[j].markdown(f"""
-                <style>
-                div[data-testid="stTextInput"] input[key="{cell_key}"] {{
-                    color: {cell_color} !important;
-                    border-right: {border_right_style} !important;
-                    border-bottom: {border_bottom_style} !important;
-                }}
-                </style>
-                """, unsafe_allow_html=True)
+            for j in range(9):
+                is_initial_cell = (i, j) in st.session_state.initial_cells
+                current_val = st.session_state.board[i][j]
+                cell_key = f"cell_{i}_{j}"
+                cell_color = st.session_state.cell_colors.get((i, j), 'red')
                 
-                cols[j].text_input(" ", 
-                                   value=current_val, 
-                                   max_chars=1, 
-                                   key=cell_key, 
-                                   on_change=update_cell_value, 
-                                   args=(i, j),
-                                   label_visibility="collapsed",
-                                   placeholder=" ")
-            
-        # 각 행 사이에 여백을 줄여 그리드를 붙입니다.
-        st.markdown('<div style="height: 1px; margin-top: -15px;"></div>', unsafe_allow_html=True)
+                # 3x3 블록 구분선을 계산하는 코드
+                is_thick_col = j in [2, 5]
+                
+                # 경계선 스타일 정의
+                border_right_style = "3px solid black" if is_thick_col else "1px solid #ccc"
+                border_bottom_style = "3px solid black" if is_thick_row else "1px solid #ccc"
+
+                if is_initial_cell:
+                    # 고정된 셀
+                    cell_html = f"""
+                    <div class="fixed-cell" style="border-right: {border_right_style}; border-bottom: {border_bottom_style};">
+                        {current_val}
+                    </div>
+                    """
+                    cols[j].markdown(cell_html, unsafe_allow_html=True)
+                else:
+                    # 사용자 입력 가능 셀
+                    # CSS를 사용하여 인라인 스타일을 적용하고, 폰트 색상을 지정
+                    cols[j].markdown(f"""
+                    <style>
+                    /* 특정 셀의 텍스트 색상과 보더를 지정합니다. */
+                    div[data-testid="stTextInput"] input[key="{cell_key}"] {{
+                        color: {cell_color} !important;
+                        border-right: {border_right_style} !important;
+                        border-bottom: {border_bottom_style} !important;
+                    }}
+                    </style>
+                    """, unsafe_allow_html=True)
+                    
+                    # st.text_input 위젯
+                    cols[j].text_input(" ", 
+                                       value=current_val, 
+                                       max_chars=1, 
+                                       key=cell_key, 
+                                       on_change=update_cell_value, 
+                                       args=(i, j),
+                                       label_visibility="collapsed",
+                                       placeholder=" ")
+                
+            # Streamlit 컬럼의 기본 여백을 무시하기 위해 높이가 0인 마크다운 추가
+            # (CSS에서 처리되어 이 부분은 사실상 불필요하지만 안전장치로 유지)
+            st.markdown('<div style="height: 1px; margin-top: 0px;"></div>', unsafe_allow_html=True)
         
     st.markdown("---")
             
