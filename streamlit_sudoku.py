@@ -207,7 +207,6 @@ def main_app():
     # --- 컨트롤 패널 (Shuffle, Finish, 난이도, 타이머) ---
     col_shuffle, col_prob_label, col_prob_edit, col_timer, col_finish = st.columns([1.5, 0.8, 1, 1.5, 1.5])
     
-    # CSS로 스타일이 통일된 Shuffle 버튼
     if col_shuffle.button("Shuffle", key="ShuffleButton", use_container_width=True):
         shuffle_click()
     
@@ -228,7 +227,6 @@ def main_app():
         
     col_timer.markdown(f"<div style='background-color: white; text-align: center; font-weight: bold; padding: 5px; border: 1px solid #ccc; font-size: 16px; margin-top: 5px;'>⏱️ {time_display}</div>", unsafe_allow_html=True)
 
-    # CSS로 스타일이 통일된 Finish 버튼
     if col_finish.button("Finish", key="FinishButton", use_container_width=True):
         complete_test_click()
 
@@ -241,8 +239,6 @@ def main_app():
     # --- Sudoku 그리드 영역 ---
     
     for i in range(9):
-        is_thick_row = i in [2, 5]
-        
         # 9개의 균등한 컬럼을 생성합니다.
         cols = st.columns(9)
         
@@ -252,9 +248,9 @@ def main_app():
             cell_key = f"cell_{i}_{j}"
             cell_color = st.session_state.cell_colors.get((i, j), 'red')
             
-            # 굵은 경계선 스타일을 정의합니다.
-            border_right_style = "3px solid black" if j in [2, 5] else "1px solid #ccc"
-            border_bottom_style = "3px solid black" if is_thick_row else "1px solid #ccc"
+            # 💡 수정된 부분: 굵은 경계선 대신 얇은 경계선으로 통일 💡
+            border_right_style = "1px solid #ccc"
+            border_bottom_style = "1px solid #ccc"
 
             if is_initial_cell:
                 # 고정된 셀
