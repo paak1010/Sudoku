@@ -2,12 +2,12 @@ import streamlit as st
 import random
 from datetime import datetime
 
-# --- CSS 스타일 정의 ---
+# --- CSS 스타일 정의 (버튼 디자인 통일 포함) ---
 CELL_STYLE = """
 <style>
 /* 모든 텍스트 입력 필드의 컨테이너 스타일 */
 div[data-testid="stTextInput"] {
-    margin: -10px 0; /* st.text_input의 기본 마진을 줄여 간격 최소화 */
+    margin: -10px 0; 
 }
 
 /* 셀 입력 필드 자체 스타일 */
@@ -16,7 +16,7 @@ div[data-testid="stTextInput"] > div > input {
     font-size: 1.2em !important;
     padding: 0px !important;
     height: 35px !important;
-    width: 100% !important; /* 컬럼 너비에 꽉 채우기 */
+    width: 100% !important; 
     box-sizing: border-box;
     margin: 0;
     border: 1px solid #ccc;
@@ -29,17 +29,33 @@ div[data-testid="stTextInput"] > div > input {
     font-weight: bold;
     font-size: 1.2em;
     height: 35px;
-    line-height: 35px; /* 텍스트 수직 중앙 정렬 */
-    background-color: #f0f2f6; /* 약간 어두운 배경 */
+    line-height: 35px;
+    background-color: #f0f2f6; 
     color: black;
     border: 1px solid #ccc;
     box-sizing: border-box;
     margin: 0;
 }
 
-/* 스도쿠 3x3 블록 구분선 스타일 */
-/* Streamlit 컬럼 내에서 이 스타일을 적용하기 어려우므로, 
-   하단 코드에서 인라인 스타일로 3x3 보더를 직접 제어합니다. */
+/* 🏆 모든 Streamlit 버튼 디자인 통일 🏆 */
+.stButton > button {
+    background-color: #4CAF50; /* 통일된 배경색 (녹색 계열) */
+    color: white;             /* 글자색 흰색 */
+    border: none;             /* 테두리 제거 */
+    padding: 10px 15px;       /* 패딩 */
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;          /* 폰트 크기 */
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 8px;       /* 둥근 모서리 */
+    transition: background-color 0.3s;
+}
+
+.stButton > button:hover {
+    background-color: #45a049; /* 호버 시 색상 변경 */
+}
 
 /* Streamlit에서 생성되는 경고 메시지 스타일 숨기기 */
 .stAlert {
@@ -79,7 +95,6 @@ def initialize_session_state():
         st.session_state.time_finished_display = "00:00"
         st.session_state.initial_cells = set()  
         st.session_state.cell_colors = {} 
-        # st.session_state.active_cell 제거됨 (숫자패드 미사용)
         st.session_state.initialized = True
         
         shuffle_click(initial_run=True)
@@ -168,9 +183,9 @@ def complete_test_click():
                     st.session_state.cell_colors[(i, j)] = 'red' 
                     is_correct = False
                 else:
-                    st.session_state.cell_colors[(i, j)] = 'green' # 맞은 부분은 녹색 (피드백)
+                    st.session_state.cell_colors[(i, j)] = 'green'
             else:
-                st.session_state.cell_colors[(i, j)] = 'black' # 초기값은 검정 유지
+                st.session_state.cell_colors[(i, j)] = 'black'
 
     # 결과 메시지 출력
     if is_correct:
@@ -192,6 +207,7 @@ def main_app():
     # --- 컨트롤 패널 (Shuffle, Finish, 난이도, 타이머) ---
     col_shuffle, col_prob_label, col_prob_edit, col_timer, col_finish = st.columns([1.5, 0.8, 1, 1.5, 1.5])
     
+    # CSS로 스타일이 통일된 Shuffle 버튼
     if col_shuffle.button("Shuffle", key="ShuffleButton", use_container_width=True):
         shuffle_click()
     
@@ -201,7 +217,7 @@ def main_app():
                              key='difficulty_prob_input', 
                              label_visibility="collapsed")
     
-    # 타이머 표시 로직 (안정화 버전)
+    # 타이머 표시 로직 
     if st.session_state.timer_running:
         elapsed_time = datetime.now() - st.session_state.game_start_time
         minutes = int(elapsed_time.total_seconds() // 60)
@@ -212,6 +228,7 @@ def main_app():
         
     col_timer.markdown(f"<div style='background-color: white; text-align: center; font-weight: bold; padding: 5px; border: 1px solid #ccc; font-size: 16px; margin-top: 5px;'>⏱️ {time_display}</div>", unsafe_allow_html=True)
 
+    # CSS로 스타일이 통일된 Finish 버튼
     if col_finish.button("Finish", key="FinishButton", use_container_width=True):
         complete_test_click()
 
@@ -221,15 +238,12 @@ def main_app():
     st.markdown("---")
 
 
-    # --- Sudoku 그리드 영역 (9x9 개선) ---
+    # --- Sudoku 그리드 영역 ---
     
-    # 이중 반복문을 사용하여 9x9 그리드를 구현합니다.
-    # 각 행은 9개의 균등한 컬럼으로 구성됩니다.
     for i in range(9):
-        # 굵은 가로 경계선을 위한 스타일 설정
         is_thick_row = i in [2, 5]
         
-        # 9개의 균등한 컬럼을 생성합니다. (Streamlit의 기본 컬럼 사용)
+        # 9개의 균등한 컬럼을 생성합니다.
         cols = st.columns(9)
         
         for j in range(9):
@@ -243,7 +257,7 @@ def main_app():
             border_bottom_style = "3px solid black" if is_thick_row else "1px solid #ccc"
 
             if is_initial_cell:
-                # 고정된 셀 (fixed-cell 클래스 스타일 사용)
+                # 고정된 셀
                 cell_html = f"""
                 <div class="fixed-cell" style="border-right: {border_right_style}; border-bottom: {border_bottom_style};">
                     {current_val}
@@ -251,11 +265,9 @@ def main_app():
                 """
                 cols[j].markdown(cell_html, unsafe_allow_html=True)
             else:
-                # 사용자 입력 가능 셀 (Streamlit text_input 사용)
-                # Streamlit 위젯의 스타일을 오버라이드합니다.
+                # 사용자 입력 가능 셀
                 cols[j].markdown(f"""
                 <style>
-                /* 특정 셀의 텍스트 색상과 보더를 지정합니다. */
                 div[data-testid="stTextInput"] input[key="{cell_key}"] {{
                     color: {cell_color} !important;
                     border-right: {border_right_style} !important;
