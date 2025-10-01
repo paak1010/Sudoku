@@ -2,59 +2,70 @@ import streamlit as st
 import random
 from datetime import datetime
 
-# --- CSS 스타일 정의 (버튼 디자인 통일 포함) ---
+# --- CSS 스타일 정의 (셀 크기 고정 및 3x3 블록 구분선 포함) ---
 CELL_STYLE = """
 <style>
-/* 모든 텍스트 입력 필드의 컨테이너 스타일 */
-div[data-testid="stTextInput"] {
-    margin: -10px 0; 
+/* 1. Streamlit 컬럼 및 위젯 컨테이너의 기본 간격 제거 */
+/* Streamlit 컬럼의 패딩/마진을 0으로 설정하여 셀들을 밀착시킵니다. */
+div[data-testid^="stHorizontalBlock"] > div[data-testid^="stVerticalBlock"] > div {
+    padding: 0px !important;
+    margin: 0px !important;
 }
 
-/* 셀 입력 필드 자체 스타일 */
+/* 2. 입력 필드 컨테이너 스타일 */
+div[data-testid="stTextInput"] {
+    margin: 0 !important; 
+    padding: 0 !important;
+}
+
+/* 3. 셀 입력 필드 자체 스타일: 크기 고정 및 중앙 정렬 */
 div[data-testid="stTextInput"] > div > input {
     text-align: center !important;
+    font-weight: bold;
     font-size: 1.2em !important;
     padding: 0px !important;
-    height: 35px !important;
-    width: 100% !important; 
+    height: 35px !important; 
+    width: 35px !important;  /* 🎯 핵심 수정: 셀 너비 고정 */
     box-sizing: border-box;
     margin: 0;
-    border: 1px solid #ccc;
+    border: 1px solid #ccc; /* 얇은 기본 경계선 */
     border-radius: 0px;
 }
 
-/* 고정된 셀 (fixed-cell) 스타일 */
+/* 4. 고정된 셀 (fixed-cell) 스타일 */
 .fixed-cell {
     text-align: center;
     font-weight: bold;
     font-size: 1.2em;
-    height: 35px;
+    height: 35px; /* 높이 고정 */
+    width: 35px;  /* 🎯 핵심 수정: 셀 너비 고정 */
     line-height: 35px;
     background-color: #f0f2f6; 
     color: black;
     border: 1px solid #ccc;
     box-sizing: border-box;
     margin: 0;
+    border-radius: 0px;
 }
 
 /* 🏆 모든 Streamlit 버튼 디자인 통일 🏆 */
 .stButton > button {
-    background-color: #4CAF50; /* 통일된 배경색 (녹색 계열) */
-    color: white;             /* 글자색 흰색 */
-    border: none;             /* 테두리 제거 */
-    padding: 10px 15px;       /* 패딩 */
+    background-color: #4CAF50; 
+    color: white;             
+    border: none;             
+    padding: 10px 15px;       
     text-align: center;
     text-decoration: none;
     display: inline-block;
-    font-size: 16px;          /* 폰트 크기 */
+    font-size: 16px;          
     margin: 4px 2px;
     cursor: pointer;
-    border-radius: 8px;       /* 둥근 모서리 */
+    border-radius: 8px;       
     transition: background-color 0.3s;
 }
 
 .stButton > button:hover {
-    background-color: #45a049; /* 호버 시 색상 변경 */
+    background-color: #45a049; 
 }
 
 /* Streamlit에서 생성되는 경고 메시지 스타일 숨기기 */
@@ -63,7 +74,6 @@ div[data-testid="stTextInput"] > div > input {
     margin-bottom: 0;
     padding: 10px;
 }
-
 </style>
 """
 
@@ -100,7 +110,7 @@ def initialize_session_state():
         shuffle_click(initial_run=True)
 
 
-# --- 게임 로직 함수 ---
+# --- 게임 로직 함수 (변경 없음) ---
 
 def shuffle_click(initial_run=False):
     """보드를 셔플하고 새 게임을 시작합니다."""
@@ -148,7 +158,6 @@ def update_cell_value(r, c):
     """텍스트 입력 필드가 변경될 때 호출됩니다."""
     new_val = st.session_state[f"cell_{r}_{c}"].strip()
     
-    # 1~9 사이의 숫자만 허용하고, 그 외는 빈 값으로 처리
     if new_val.isdigit() and 1 <= int(new_val) <= 9:
         st.session_state.board[r][c] = new_val
         st.session_state.cell_colors[(r, c)] = 'red' 
@@ -156,7 +165,6 @@ def update_cell_value(r, c):
         st.session_state.board[r][c] = ""
         st.session_state.cell_colors[(r, c)] = 'red' 
     else:
-        # 잘못된 입력은 무시하고 이전 값으로 롤백하여 UI에 표시
         st.session_state[f"cell_{r}_{c}"] = st.session_state.board[r][c]
         
 def complete_test_click():
@@ -165,14 +173,12 @@ def complete_test_click():
 
     is_correct = True
     
-    # 시간 계산 및 저장
     elapsed_time = datetime.now() - st.session_state.game_start_time
     minutes = int(elapsed_time.total_seconds() // 60)
     seconds = int(elapsed_time.total_seconds() % 60)
     current_time_display = f"{minutes:02d}:{seconds:02d}"
     st.session_state.time_finished_display = current_time_display
 
-    # 채점 및 색상 결정
     for i in range(9):
         for j in range(9):
             current_val = st.session_state.board[i][j]
@@ -187,7 +193,6 @@ def complete_test_click():
             else:
                 st.session_state.cell_colors[(i, j)] = 'black'
 
-    # 결과 메시지 출력
     if is_correct:
         st.session_state.result_message = f"✅ 정답입니다! 퍼즐을 풀었습니다. 소요 시간: {current_time_display}"
         st.balloons()
@@ -239,7 +244,10 @@ def main_app():
     # --- Sudoku 그리드 영역 ---
     
     for i in range(9):
-        # 9개의 균등한 컬럼을 생성합니다.
+        # 현재 행이 3x3 블록의 아래 경계선인지 확인 (인덱스 2와 5)
+        is_thick_row = i in [2, 5]
+        
+        # 9개의 균등한 컬럼을 생성합니다. (CSS로 크기가 고정되므로 간격이 좁아짐)
         cols = st.columns(9)
         
         for j in range(9):
@@ -248,9 +256,12 @@ def main_app():
             cell_key = f"cell_{i}_{j}"
             cell_color = st.session_state.cell_colors.get((i, j), 'red')
             
-            # 💡 수정된 부분: 굵은 경계선 대신 얇은 경계선으로 통일 💡
-            border_right_style = "1px solid #ccc"
-            border_bottom_style = "1px solid #ccc"
+            # 🎯 3x3 블록 구분선을 계산하여 굵은 선 복원
+            is_thick_col = j in [2, 5]
+            
+            # 경계선 스타일 정의: 3x3 구분선은 굵게, 나머지는 얇게
+            border_right_style = "3px solid black" if is_thick_col else "1px solid #ccc"
+            border_bottom_style = "3px solid black" if is_thick_row else "1px solid #ccc"
 
             if is_initial_cell:
                 # 고정된 셀
@@ -264,6 +275,7 @@ def main_app():
                 # 사용자 입력 가능 셀
                 cols[j].markdown(f"""
                 <style>
+                /* 특정 셀의 텍스트 색상과 보더를 지정합니다. */
                 div[data-testid="stTextInput"] input[key="{cell_key}"] {{
                     color: {cell_color} !important;
                     border-right: {border_right_style} !important;
@@ -281,8 +293,8 @@ def main_app():
                                    label_visibility="collapsed",
                                    placeholder=" ")
             
-        # 각 행 사이에 여백을 줄여 그리드를 붙입니다.
-        st.markdown('<div style="height: 1px; margin-top: -15px;"></div>', unsafe_allow_html=True)
+        # ⚠️ 이전 단계에서 그리드를 망가뜨린 불필요한 마크다운 제거 (CSS로 해결됨)
+        # st.markdown('<div style="height: 1px; margin-top: -15px;"></div>', unsafe_allow_html=True) 
         
     st.markdown("---")
             
