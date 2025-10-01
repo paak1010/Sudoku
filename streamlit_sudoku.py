@@ -140,7 +140,7 @@ def complete_test_click():
         st.session_state.result_message = f"정답입니다! 퍼즐을 풀었습니다. 소요 시간: {current_time_display}"
         st.balloons()
     else:
-        st.session_state.result_message = "아쉽지만, 정답이 아닙니다. 빨간색으로 표시된 부분을 확인하세요."
+        st.session_state.result_message = "아쉽지만, 정답이 아닙니다."
         
     st.rerun() 
 
@@ -240,3 +240,4 @@ def main_app():
             
 if __name__ == "__main__":
     main_app()
+
