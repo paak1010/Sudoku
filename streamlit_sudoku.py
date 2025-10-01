@@ -150,7 +150,7 @@ def main_app():
     initialize_session_state()
     st.markdown(CELL_STYLE, unsafe_allow_html=True) 
     
-    st.title("Streamlit Sudoku 🧩 (Basic Grid)")
+    st.title("Streamlit Sudoku")
     
     # --- 컨트롤 패널 (배치 변경 없음) ---
     col_shuffle, col_prob_label, col_prob_edit, col_timer, col_finish = st.columns([1.5, 0.8, 1, 1.5, 1.5])
@@ -183,8 +183,6 @@ def main_app():
     st.info(st.session_state.result_message)
     st.markdown("---")
 
-    # --- Sudoku 그리드 영역 (최소한의 CSS로 9x9 행렬 보장) ---
-    # *모든 굵은 선 로직을 제거하고 얇은 선만 남깁니다.*
     
     for i in range(9):
         # 9개의 균등한 컬럼을 생성합니다.
@@ -240,4 +238,5 @@ def main_app():
             
 if __name__ == "__main__":
     main_app()
+
 
