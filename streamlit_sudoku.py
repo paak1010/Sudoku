@@ -2,77 +2,89 @@ import streamlit as st
 import random
 from datetime import datetime
 
-# --- CSS 스타일 정의 (버튼 디자인 통일 포함) ---
-CELL_STYLE = """
-<style>
-/* 모든 텍스트 입력 필드의 컨테이너 스타일 */
-div[data-testid="stTextInput"] {
-    margin: -10px 0; 
-}
+# --- CSS 스타일 정의 (CSS Grid를 모방하여 완벽한 격자 구조 구현) ---
 
-/* 셀 입력 필드 자체 스타일 */
-div[data-testid="stTextInput"] > div > input {
+# 셀 크기
+CELL_SIZE = "35px"
+THICK_BORDER = "3px solid black"
+THIN_BORDER = "1px solid #ccc"
+
+CELL_STYLE = f"""
+<style>
+/* 1. 스도쿠 그리드 컨테이너 스타일 (Grid 레이아웃 구현) */
+.sudoku-grid {{
+    display: grid;
+    /* 9개의 동일한 크기(CELL_SIZE)를 가진 컬럼을 정의 */
+    grid-template-columns: repeat(9, {CELL_SIZE});
+    width: fit-content; /* 그리드 너비를 내용물에 맞춤 */
+    margin: 20px auto; /* 중앙 정렬 */
+    border-top: {THICK_BORDER}; /* 전체 보드의 위쪽 테두리 */
+    border-left: {THICK_BORDER}; /* 전체 보드의 왼쪽 테두리 */
+}}
+
+/* 2. 일반적인 Streamlit 위젯 마진/패딩 초기화 */
+div[data-testid="stTextInput"], 
+div[data-testid="stHorizontalBlock"] > div[data-testid^="stVerticalBlock"] > div {{
+    margin: 0 !important; 
+    padding: 0 !important;
+}}
+
+/* 3. 셀 입력 필드 자체 스타일: 크기 고정 및 중앙 정렬 */
+div[data-testid="stTextInput"] > div > input {{
     text-align: center !important;
     font-weight: bold;
     font-size: 1.2em !important;
-    padding: 0px !important;
-    height: 35px !important;
-    width: 100% !important; 
+    padding: 0 !important;
+    height: {CELL_SIZE} !important; 
+    width: {CELL_SIZE} !important;
     box-sizing: border-box;
     margin: 0;
-    border: 1px solid #ccc;
-    border-radius: 0px;
-}
+    border: none; /* 개별 셀의 테두리는 부모 요소가 담당 */
+    border-radius: 0;
+}}
 
-/* 고정된 셀 (fixed-cell) 스타일 */
-.fixed-cell {
+/* 4. 고정된 셀 (fixed-cell) 스타일 */
+.fixed-cell {{
     text-align: center;
     font-weight: bold;
     font-size: 1.2em;
-    height: 35px;
-    line-height: 35px;
+    height: {CELL_SIZE}; 
+    line-height: {CELL_SIZE}; /* 수직 중앙 정렬 */
+    width: {CELL_SIZE};
     background-color: #f0f2f6; 
     color: black;
-    border: 1px solid #ccc;
     box-sizing: border-box;
     margin: 0;
-    border-radius: 0px;
-}
+}}
 
 /* 🏆 모든 Streamlit 버튼 디자인 통일 🏆 */
-.stButton > button {
-    background-color: #4CAF50; /* 통일된 배경색 (녹색 계열) */
-    color: white;             /* 글자색 흰색 */
-    border: none;             /* 테두리 제거 */
-    padding: 10px 15px;       /* 패딩 */
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;          /* 폰트 크기 */
+.stButton > button {{
+    background-color: #4CAF50; 
+    color: white;             
+    border: none;             
+    padding: 10px 15px;       
+    font-size: 16px;          
     margin: 4px 2px;
     cursor: pointer;
-    border-radius: 8px;       /* 둥근 모서리 */
+    border-radius: 8px;       
     transition: background-color 0.3s;
-}
-
-.stButton > button:hover {
-    background-color: #45a049; /* 호버 시 색상 변경 */
-}
+}}
+.stButton > button:hover {{
+    background-color: #45a049; 
+}}
 
 /* Streamlit에서 생성되는 경고 메시지 스타일 숨기기 */
-.stAlert {
+.stAlert {{
     margin-top: 0;
     margin-bottom: 0;
     padding: 10px;
-}
-
+}}
 </style>
 """
 
-# --- 게임 상태 초기화 ---
+# --- 게임 상태 초기화 (변경 없음) ---
 
 def initialize_session_state():
-    """세션 상태를 초기화하고 첫 게임을 시작합니다."""
     if 'initialized' not in st.session_state:
         AVal_initial = [
             ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
@@ -102,10 +114,9 @@ def initialize_session_state():
         shuffle_click(initial_run=True)
 
 
-# --- 게임 로직 함수 ---
+# --- 게임 로직 함수 (변경 없음) ---
 
 def shuffle_click(initial_run=False):
-    """보드를 셔플하고 새 게임을 시작합니다."""
     if not initial_run:
         try:
             prob = float(st.session_state.get('difficulty_prob_input', st.session_state.difficulty_prob))
@@ -114,16 +125,12 @@ def shuffle_click(initial_run=False):
             st.session_state.difficulty_prob = 0.7 
     
     AVal = st.session_state.initial_solution
-    
     random19 = list(range(1, 10))
     random.shuffle(random19)
-    
     correct_board = [[str(random19[int(AVal[i][j]) - 1]) for j in range(9)] for i in range(9)]
-    
     new_board = [[correct_board[i][j] for j in range(9)] for i in range(9)]
     initial_cells = set()
     prob = st.session_state.difficulty_prob
-    
     st.session_state.cell_colors = {} 
     
     for i in range(9):
@@ -150,7 +157,6 @@ def update_cell_value(r, c):
     """텍스트 입력 필드가 변경될 때 호출됩니다."""
     new_val = st.session_state[f"cell_{r}_{c}"].strip()
     
-    # 1~9 사이의 숫자만 허용하고, 그 외는 빈 값으로 처리
     if new_val.isdigit() and 1 <= int(new_val) <= 9:
         st.session_state.board[r][c] = new_val
         st.session_state.cell_colors[(r, c)] = 'red' 
@@ -158,7 +164,6 @@ def update_cell_value(r, c):
         st.session_state.board[r][c] = ""
         st.session_state.cell_colors[(r, c)] = 'red' 
     else:
-        # 잘못된 입력은 무시하고 이전 값으로 롤백하여 UI에 표시
         st.session_state[f"cell_{r}_{c}"] = st.session_state.board[r][c]
         
 def complete_test_click():
@@ -167,14 +172,12 @@ def complete_test_click():
 
     is_correct = True
     
-    # 시간 계산 및 저장
     elapsed_time = datetime.now() - st.session_state.game_start_time
     minutes = int(elapsed_time.total_seconds() // 60)
     seconds = int(elapsed_time.total_seconds() % 60)
     current_time_display = f"{minutes:02d}:{seconds:02d}"
     st.session_state.time_finished_display = current_time_display
 
-    # 채점 및 색상 결정
     for i in range(9):
         for j in range(9):
             current_val = st.session_state.board[i][j]
@@ -189,7 +192,6 @@ def complete_test_click():
             else:
                 st.session_state.cell_colors[(i, j)] = 'black'
 
-    # 결과 메시지 출력
     if is_correct:
         st.session_state.result_message = f"✅ 정답입니다! 퍼즐을 풀었습니다. 소요 시간: {current_time_display}"
         st.balloons()
@@ -238,11 +240,14 @@ def main_app():
     st.markdown("---")
 
 
-    # --- Sudoku 그리드 영역 ---
+    # --- Sudoku 그리드 영역 (CSS Grid 컨테이너 사용) ---
+    
+    # Grid 컨테이너 시작
+    st.markdown('<div class="sudoku-grid">', unsafe_allow_html=True)
     
     for i in range(9):
-        # 9개의 균등한 컬럼을 생성합니다.
-        cols = st.columns(9)
+        # 현재 행이 3x3 블록의 아래 경계선인지 확인 (인덱스 2와 5)
+        is_thick_row = i in [2, 5]
         
         for j in range(9):
             is_initial_cell = (i, j) in st.session_state.initial_cells
@@ -250,42 +255,54 @@ def main_app():
             cell_key = f"cell_{i}_{j}"
             cell_color = st.session_state.cell_colors.get((i, j), 'red')
             
-            # 💡 수정된 부분: 굵은 경계선 대신 얇은 경계선으로 통일 💡
-            border_right_style = "1px solid #ccc"
-            border_bottom_style = "1px solid #ccc"
-
+            # 3x3 블록 구분선을 계산하는 코드
+            is_thick_col = j in [2, 5]
+            
+            # 경계선 스타일 정의: 3x3 구분선은 굵게, 나머지는 얇게
+            # Grid 방식에서는 오른쪽과 아래쪽 테두리만 조건부로 적용
+            border_right_style = THICK_BORDER if is_thick_col else THIN_BORDER
+            border_bottom_style = THICK_BORDER if is_thick_row else THIN_BORDER
+            
+            # 셀을 담을 Grid 아이템 컨테이너 시작 (스타일 적용)
+            st.markdown(f'<div style="border-right: {border_right_style}; border-bottom: {border_bottom_style};">', unsafe_allow_html=True)
+            
             if is_initial_cell:
                 # 고정된 셀
                 cell_html = f"""
-                <div class="fixed-cell" style="border-right: {border_right_style}; border-bottom: {border_bottom_style};">
+                <div class="fixed-cell">
                     {current_val}
                 </div>
                 """
-                cols[j].markdown(cell_html, unsafe_allow_html=True)
+                st.markdown(cell_html, unsafe_allow_html=True)
             else:
                 # 사용자 입력 가능 셀
-                cols[j].markdown(f"""
+                # **주의**: st.text_input을 Grid 내부에서 직접 사용하면 레이아웃이 깨지기 쉬우므로,
+                # 여기서는 st.columns 대신 Grid의 개별 아이템으로 렌더링하는 방식을 사용합니다.
+                
+                # 인라인 스타일 주입으로 텍스트 색상만 제어
+                st.markdown(f"""
                 <style>
                 div[data-testid="stTextInput"] input[key="{cell_key}"] {{
                     color: {cell_color} !important;
-                    border-right: {border_right_style} !important;
-                    border-bottom: {border_bottom_style} !important;
                 }}
                 </style>
                 """, unsafe_allow_html=True)
                 
-                cols[j].text_input(" ", 
-                                   value=current_val, 
-                                   max_chars=1, 
-                                   key=cell_key, 
-                                   on_change=update_cell_value, 
-                                   args=(i, j),
-                                   label_visibility="collapsed",
-                                   placeholder=" ")
+                # st.text_input 위젯 (Grid 아이템 안에 삽입)
+                st.text_input(" ", 
+                               value=current_val, 
+                               max_chars=1, 
+                               key=cell_key, 
+                               on_change=update_cell_value, 
+                               args=(i, j),
+                               label_visibility="collapsed",
+                               placeholder=" ")
             
-        # 각 행 사이에 여백을 줄여 그리드를 붙입니다.
-        st.markdown('<div style="height: 1px; margin-top: -15px;"></div>', unsafe_allow_html=True)
-        
+            # 셀을 담을 Grid 아이템 컨테이너 닫기
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+    # Grid 컨테이너 닫기
+    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("---")
             
 if __name__ == "__main__":
