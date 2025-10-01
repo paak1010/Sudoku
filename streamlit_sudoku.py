@@ -1,7 +1,7 @@
 import streamlit as st
 import random
 from datetime import datetime
-import time
+# time 모듈은 이제 강제 재실행을 위해 사용하지 않습니다.
 
 # --- CSS 스타일 정의 ---
 CELL_STYLE = """
@@ -38,7 +38,7 @@ div[data-testid="stTextInput"] > div > input {
     margin: 0;
 }
 
-/* 스도쿠 3x3 블록 구분선 스타일 (3번째, 6번째 행과 열에 적용될 보더) */
+/* 스도쿠 3x3 블록 구분선 스타일 */
 .col-border-right {
     border-right: 3px solid black !important;
 }
@@ -47,16 +47,7 @@ div[data-testid="stTextInput"] > div > input {
     border-bottom: 3px solid black !important;
 }
 
-/* 숫자 버튼 스타일 */
-.number-button {
-    font-size: 1.5em;
-    font-weight: bold;
-    padding: 10px;
-    margin: 5px;
-    border-radius: 5px;
-}
-
-/* Streamlit에서 생성되는 경고 메시지 스타일 숨기기 (경고 메시지가 너무 많아지는 것을 방지) */
+/* Streamlit에서 생성되는 경고 메시지 스타일 숨기기 */
 .stAlert {
     margin-top: 0;
     margin-bottom: 0;
@@ -94,7 +85,7 @@ def initialize_session_state():
         st.session_state.time_finished_display = "00:00"
         st.session_state.initial_cells = set()  
         st.session_state.cell_colors = {} 
-        st.session_state.active_cell = None  # 👈 추가: 현재 포커스된 셀 (r, c)
+        st.session_state.active_cell = None  
         st.session_state.initialized = True
         
         shuffle_click(initial_run=True)
@@ -150,9 +141,10 @@ def update_cell_value(r, c):
     new_val = st.session_state[f"cell_{r}_{c}"].strip()
     
     # 1. 현재 포커스된 셀 저장 (버튼 입력에 사용)
-    st.session_state.active_cell = (r, c) # 👈 추가
+    # Streamlit의 on_change는 포커스를 잃을 때 발생하므로, 이 시점에 active_cell을 설정합니다.
+    st.session_state.active_cell = (r, c)
 
-    # 2. 값 유효성 검사 및 업데이트 (기존 로직 유지)
+    # 2. 값 유효성 검사 및 업데이트 
     if new_val.isdigit() and 1 <= int(new_val) <= 9:
         st.session_state.board[r][c] = new_val
         st.session_state.cell_colors[(r, c)] = 'red' 
@@ -160,22 +152,23 @@ def update_cell_value(r, c):
         st.session_state.board[r][c] = ""
         st.session_state.cell_colors[(r, c)] = 'red' 
     else:
-        # 잘못된 입력은 UI에서 필터링
+        # 잘못된 입력은 무시 (이전 값 유지)
         pass
         
 def complete_test_click():
     """채점 로직을 실행합니다."""
-    # ... (기존 로직과 동일)
     st.session_state.timer_running = False 
 
     is_correct = True
     
+    # 시간 계산 및 저장
     elapsed_time = datetime.now() - st.session_state.game_start_time
     minutes = int(elapsed_time.total_seconds() // 60)
     seconds = int(elapsed_time.total_seconds() % 60)
     current_time_display = f"{minutes:02d}:{seconds:02d}"
     st.session_state.time_finished_display = current_time_display
 
+    # 채점 및 색상 결정
     for i in range(9):
         for j in range(9):
             current_val = st.session_state.board[i][j]
@@ -186,8 +179,12 @@ def complete_test_click():
                     st.session_state.cell_colors[(i, j)] = 'red' 
                     is_correct = False
                 else:
-                    st.session_state.cell_colors[(i, j)] = 'green' 
+                    st.session_state.cell_colors[(i, j)] = 'green' # 정답은 녹색으로 표시
+            else:
+                # 초기값은 검정 유지
+                st.session_state.cell_colors[(i, j)] = 'black'
 
+    # 결과 메시지 출력
     if is_correct:
         st.session_state.result_message = f"✅ 정답입니다! 퍼즐을 풀었습니다. 소요 시간: {current_time_display}"
         st.balloons()
@@ -198,11 +195,17 @@ def complete_test_click():
 
 def insert_number_click(number_str):
     """숫자 버튼 클릭 시 호출되어, 활성화된 셀에 숫자를 입력합니다."""
+    if st.session_state.active_cell is None:
+        st.session_state.result_message = "⚠️ 먼저 스도쿠 보드의 빈 칸을 클릭(선택)해주세요!"
+        st.rerun()
+        return
+
     r, c = st.session_state.active_cell
     
     # 초기 고정 셀이 아닌지 확인
     if (r, c) in st.session_state.initial_cells:
         st.session_state.result_message = "❌ 이 셀은 초기 고정된 셀이라 수정할 수 없습니다."
+        st.rerun()
         return
 
     # 숫자 삽입 또는 지우기
@@ -211,10 +214,13 @@ def insert_number_click(number_str):
     else:
         st.session_state.board[r][c] = number_str
 
+    # 텍스트 입력 필드의 값을 수동으로 업데이트합니다.
+    st.session_state[f"cell_{r}_{c}"] = st.session_state.board[r][c]
+    
     # 색상 업데이트 (사용자 입력이므로 빨간색)
     st.session_state.cell_colors[(r, c)] = 'red'
 
-    st.rerun() # 변경 사항을 UI에 즉시 반영
+    st.rerun() 
 
 # --- 메인 UI 구성 ---
 
@@ -236,22 +242,20 @@ def main_app():
                              key='difficulty_prob_input', 
                              label_visibility="collapsed")
     
-    # 타이머 표시 로직 (기존 로직과 동일)
+    # **🔥 타이머 로직 수정 (에러 해결 핵심 부분) 🔥**
     if st.session_state.timer_running:
         elapsed_time = datetime.now() - st.session_state.game_start_time
         minutes = int(elapsed_time.total_seconds() // 60)
         seconds = int(elapsed_time.total_seconds() % 60)
         time_display = f"{minutes:02d}:{seconds:02d}"
         
-        timer_placeholder = col_timer.empty()
-        timer_placeholder.markdown(f"<div style='background-color: white; text-align: center; font-weight: bold; padding: 5px; border: 1px solid #ccc; font-size: 16px; margin-top: 5px;'>⏱️ {time_display}</div>", unsafe_allow_html=True)
-        # 1초마다 업데이트하여 타이머 실행
-        time.sleep(1)
-        st.experimental_rerun()
+        # ⚠️ 무한 루프를 유발하는 time.sleep()과 st.rerun()을 제거했습니다.
+        # 이제 시간은 Streamlit의 일반적인 동작(위젯 상호작용)에 따라 갱신됩니다.
         
     else:
         time_display = st.session_state.time_finished_display
-        col_timer.markdown(f"<div style='background-color: white; text-align: center; font-weight: bold; padding: 5px; border: 1px solid #ccc; font-size: 16px; margin-top: 5px;'>⏱️ {time_display}</div>", unsafe_allow_html=True)
+        
+    col_timer.markdown(f"<div style='background-color: white; text-align: center; font-weight: bold; padding: 5px; border: 1px solid #ccc; font-size: 16px; margin-top: 5px;'>⏱️ {time_display}</div>", unsafe_allow_html=True)
 
 
     if col_finish.button("Finish", key="FinishButton", use_container_width=True):
@@ -266,6 +270,7 @@ def main_app():
     # --- Sudoku 그리드 영역 ---
     
     for i in range(9):
+        # 3x3 블록 구분을 위한 컬럼 설정
         cols_config = [1] * 3 + [0.05] + [1] * 3 + [0.05] + [1] * 3
         cols = st.columns(cols_config)
         
@@ -277,16 +282,16 @@ def main_app():
             cell_key = f"cell_{i}_{j}"
             cell_color = st.session_state.cell_colors.get((i, j), 'red')
             
-            # 3열과 6열 다음에는 굵은 세로 구분선 역할을 하는 빈 컬럼 처리
+            # 3열과 6열 다음 경계선 컬럼을 건너뜁니다.
             if j in [3, 6]:
                 col_index += 1
             
             # 셀 스타일 및 위젯/마크다운 렌더링
+            border_right_style = "3px solid black" if j in [2, 5] else "1px solid #ccc"
+            border_bottom_style = "3px solid black" if i in [2, 5] else "1px solid #ccc"
+
             if is_initial_cell:
                 # 고정된 셀 (fixed-cell 클래스 스타일 사용)
-                border_right_style = "3px solid black" if j in [2, 5] else "1px solid #ccc"
-                border_bottom_style = "3px solid black" if i in [2, 5] else "1px solid #ccc"
-                
                 cell_html = f"""
                 <div class="fixed-cell" style="border-right: {border_right_style}; border-bottom: {border_bottom_style};">
                     {current_val}
@@ -295,11 +300,7 @@ def main_app():
                 cols[col_index].markdown(cell_html, unsafe_allow_html=True)
             else:
                 # 사용자 입력 가능 셀 (Streamlit text_input 사용)
-                # 인라인 스타일 주입 (텍스트 색상 및 보더)
-                border_right_style = "3px solid black" if j in [2, 5] else "1px solid #ccc"
-                border_bottom_style = "3px solid black" if i in [2, 5] else "1px solid #ccc"
-                
-                # Streamlit 위젯의 스타일을 오버라이드하여 경계선과 색상을 적용합니다.
+                # Streamlit 위젯의 스타일을 오버라이드합니다.
                 cols[col_index].markdown(f"""
                 <style>
                 div[data-testid="stTextInput"] input[key="{cell_key}"] {{
@@ -315,7 +316,7 @@ def main_app():
                                            max_chars=1, 
                                            key=cell_key, 
                                            on_change=update_cell_value, 
-                                           args=(i, j), # on_change 시 포커스된 셀 정보를 저장합니다.
+                                           args=(i, j), # on_change 시 셀 정보를 저장합니다.
                                            label_visibility="collapsed",
                                            placeholder=" ")
                 
@@ -333,17 +334,11 @@ def main_app():
     for k in range(1, 10):
         number_str = str(k)
         if num_cols[k-1].button(number_str, key=f"num_btn_{k}", use_container_width=True):
-            if st.session_state.active_cell:
-                insert_number_click(number_str)
-            else:
-                st.session_state.result_message = "⚠️ 먼저 스도쿠 보드의 빈 칸을 클릭(선택)해주세요!"
+            insert_number_click(number_str)
 
     # 지우기 버튼 (DEL)
     if num_cols[9].button("❌ 지우기", key="del_btn", use_container_width=True):
-        if st.session_state.active_cell:
-            insert_number_click("DEL")
-        else:
-            st.session_state.result_message = "⚠️ 먼저 스도쿠 보드의 빈 칸을 클릭(선택)해주세요!"
+        insert_number_click("DEL")
             
 if __name__ == "__main__":
     main_app()
