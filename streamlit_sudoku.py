@@ -2,11 +2,14 @@ import streamlit as st
 import random
 from datetime import datetime
 
-# --- 🎯 CSS 스타일 정의 (9x9 그리드 강제 적용 및 보정) 🎯 ---
-CELL_STYLE = """
+# --- 🎯 CSS 스타일 정의 (정사각형 셀, 명확한 그리드) 🎯 ---
+CELL_SIZE_PX = 45 # 셀의 크기 (가로/세로)
+GRID_WIDTH_PX = CELL_SIZE_PX * 9 + 10 # 전체 그리드 너비 (테두리 여백 포함)
+
+CELL_STYLE = f"""
 <style>
-/* 🏆 버튼 스타일은 그대로 유지 🏆 */
-.stButton > button {
+/* 🏆 버튼 스타일 유지 🏆 */
+.stButton > button {{
     background-color: #4CAF50;
     color: white;
     border: none;
@@ -16,100 +19,88 @@ CELL_STYLE = """
     cursor: pointer;
     border-radius: 8px;
     transition: background-color 0.3s;
-}
-
-.stButton > button:hover {
+}}
+.stButton > button:hover {{
     background-color: #45a049;
-}
+}}
 
-/* 9x9 스도쿠 보드 컨테이너 스타일 */
-div.sudoku-grid-container {
-    width: 100%;
-    max-width: 540px; /* 9개의 셀을 50px로 잡고 테두리 여유를 둔 크기 */
+/* 스도쿠 보드 전체를 감싸는 컨테이너 */
+div.sudoku-grid-container {{
+    width: {GRID_WIDTH_PX}px;
+    height: {GRID_WIDTH_PX}px;
     margin: 20px auto; /* 중앙 정렬 */
     border: 3px solid #333; /* 전체 보드 두꺼운 테두리 */
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     background-color: white;
-    display: flex; /* 자식 요소들을 유연하게 배치 */
-    flex-direction: column;
-}
-
-/* Streamlit 컬럼 컨테이너 (한 줄) 스타일 */
-[data-testid="stHorizontalBlock"] {
+    display: flex;
+    flex-wrap: wrap; /* 셀들을 9x9로 배치 */
     padding: 0;
-    margin: 0;
-    width: 100%;
-}
+}}
 
-/* 개별 Streamlit 컬럼 (개별 셀 컨테이너)에 9등분 너비 강제 적용 */
-[data-testid^="stColumn"] {
-    flex-basis: 11.11% !important; /* 1/9 = 11.111...% */
-    min-width: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-/* 스도쿠 셀의 텍스트 입력 필드 스타일 조정 */
-div[data-testid*="stTextInput"] {
-    margin: 0 !important;
-    padding: 0 !important;
-    height: 100%;
-}
-
-div[data-testid*="stTextInput"] input {
-    height: 100%;
-    width: 100%;
-    text-align: center !important;
-    font-size: 1.5em !important;
-    font-weight: bold !important;
-    margin: 0;
-    padding: 0;
-    border-radius: 0;
-    border: none !important;
-}
-
-/* 고정된 셀과 입력 셀의 공통 스타일 */
-.sudoku-cell, .fixed-cell {
-    width: 100%;
-    height: 60px; /* 셀 높이 고정 (가로/세로 비율에 맞게 조정 가능) */
+/* 개별 셀 컨테이너 (st.markdown으로 생성되는 div) */
+.sudoku-cell-container {{
+    width: {CELL_SIZE_PX}px;
+    height: {CELL_SIZE_PX}px;
     box-sizing: border-box;
-    text-align: center;
-    line-height: 60px; /* 텍스트 중앙 정렬 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
     padding: 0;
     margin: 0;
-}
+}}
 
 /* 고정된 셀의 스타일 */
-.fixed-cell {
+.fixed-cell-content {{
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    line-height: {CELL_SIZE_PX}px;
     background-color: #eee; /* 고정된 셀 배경색 */
     color: black;
     font-weight: bold;
-    font-size: 1.5em;
-}
+    font-size: 1.2em;
+    padding: 0;
+    margin: 0;
+}}
+
+/* 텍스트 입력 필드 자체를 정사각형 셀 크기에 맞춤 */
+div[data-testid*="stTextInput"] {{
+    margin: 0 !important;
+    padding: 0 !important;
+    width: {CELL_SIZE_PX}px; 
+    height: {CELL_SIZE_PX}px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}}
+
+div[data-testid*="stTextInput"] input {{
+    width: 100%;
+    height: 100%;
+    text-align: center !important;
+    font-size: 1.2em !important;
+    font-weight: bold !important;
+    border: none !important; /* 기본 Streamlit 테두리 제거 */
+    margin: 0;
+    padding: 0;
+}}
 
 /* 3x3 블록 간의 경계선 설정 */
-/* 모든 셀에 기본 얇은 오른쪽/아래쪽 경계선 적용 */
-.sudoku-cell {
+.sudoku-cell-container {{
     border-right: 1px solid #ccc;
     border-bottom: 1px solid #ccc;
-}
+}}
 
 /* 3, 6 번째 열에 두꺼운 오른쪽 경계선 */
-.col-index-2 .sudoku-cell,
-.col-index-5 .sudoku-cell {
-    border-right: 3px solid #333;
-}
+/* (index 2, 5, 8은 0부터 시작하는 인덱스입니다) */
+.col-index-2 {{ border-right: 3px solid #333; }}
+.col-index-5 {{ border-right: 3px solid #333; }}
+.col-index-8 {{ border-right: none; }} /* 가장 오른쪽 테두리는 전체 그리드 테두리가 대신함 */
 
-/* 2, 5 번째 행에 두꺼운 아래쪽 경계선 */
-.row-index-2 .sudoku-cell,
-.row-index-5 .sudoku-cell {
-    border-bottom: 3px solid #333;
-}
-
-/* 보드 맨 오른쪽/맨 아래 테두리 제거 (전체 보드 테두리가 대신함) */
-.col-index-8 .sudoku-cell { border-right: none; }
-.row-index-8 .sudoku-cell { border-bottom: none; }
-
+/* 3, 6 번째 행에 두꺼운 아래쪽 경계선 */
+.row-index-2 .sudoku-cell-container,
+.row-index-5 .sudoku-cell-container {{ border-bottom: 3px solid #333; }}
+.row-index-8 .sudoku-cell-container {{ border-bottom: none; }}
 </style>
 """
 
@@ -189,6 +180,7 @@ def update_cell_value(r, c):
         st.session_state.board[r][c] = ""
         st.session_state.cell_colors[(r, c)] = 'red'
     else:
+        # 유효하지 않은 입력 시 이전 값 유지
         st.session_state[f"cell_{r}_{c}"] = st.session_state.board[r][c]
         
 def complete_test_click():
@@ -206,12 +198,13 @@ def complete_test_click():
             current_val = st.session_state.board[i][j]
             correct_val = st.session_state.correct_board[i][j]
             
+            # 정답 검증 후 색상 업데이트
             st.session_state.cell_colors[(i, j)] = 'black' if current_val == correct_val else 'red'
 
             if current_val != correct_val:
                 is_correct = False
     
-    # 고정 셀은 다시 검은색으로 강제 설정 (원래 상태 유지)
+    # 고정 셀은 항상 검은색으로 유지
     for r, c in st.session_state.initial_cells:
         st.session_state.cell_colors[(r, c)] = 'black'
 
@@ -262,57 +255,62 @@ def main_app():
     st.info(st.session_state.result_message)
     st.markdown("---")
 
-    # --- 스도쿠 보드 UI (9x9 그리드 명확화) ---
+    # --- 스도쿠 보드 UI (단일 마크다운 블록으로 9x9 렌더링) ---
     st.markdown('<div class="sudoku-grid-container">', unsafe_allow_html=True)
     
+    # st.columns 대신 단일 블록 안에 모든 셀을 순서대로 배치
+    cols_placeholder = st.empty()
+    
+    all_cells_html = ""
     for i in range(9):
-        row_class = f"row-index-{i}"
-        
-        # Streamlit 컬럼을 명확하게 9개 만듭니다.
-        cols = st.columns(9)
-        
         for j in range(9):
             is_initial_cell = (i, j) in st.session_state.initial_cells
             current_val = st.session_state.board[i][j]
             cell_key = f"cell_{i}_{j}"
             cell_color = st.session_state.cell_colors.get((i, j), 'red')
             
+            row_class = f"row-index-{i}"
             col_class = f"col-index-{j}"
             
-            with cols[j]:
-                # CSS 클래스를 적용하여 셀 모양을 제어
-                st.markdown(f'<div class="sudoku-cell {row_class} {col_class}">', unsafe_allow_html=True)
+            cell_container_start = f'<div class="sudoku-cell-container {row_class} {col_class}">'
+            cell_container_end = '</div>'
+            
+            if is_initial_cell:
+                # 고정된 셀 (HTML로 표시)
+                cell_content = f"""
+                <div class="fixed-cell-content">
+                    {current_val}
+                </div>
+                """
+                all_cells_html += cell_container_start + cell_content + cell_container_end
+            else:
+                # 사용자 입력 가능 셀 (Streamlit 위젯 사용)
+                # st.columns를 사용하지 않으므로, 셀을 순서대로 생성해야 합니다.
                 
-                if is_initial_cell:
-                    # 고정된 셀
-                    cell_html = f"""
-                    <div class="fixed-cell">
-                        {current_val}
-                    </div>
-                    """
-                    st.markdown(cell_html, unsafe_allow_html=True)
-                else:
-                    # 사용자 입력 가능 셀
-                    st.markdown(f"""
-                    <style>
-                    /* 특정 입력 필드의 텍스트 색상 설정 */
-                    div[data-testid*="stTextInput"] input[key="{cell_key}"] {{
-                        color: {cell_color} !important;
-                    }}
-                    </style>
-                    """, unsafe_allow_html=True)
-                    
-                    st.text_input(" ", 
-                                  value=current_val, 
-                                  max_chars=1, 
-                                  key=cell_key, 
-                                  on_change=update_cell_value, 
-                                  args=(i, j),
-                                  label_visibility="collapsed",
-                                  placeholder=" ")
-                    
-                st.markdown('</div>', unsafe_allow_html=True)
-        
+                # 입력 필드 색상 스타일링을 위한 CSS 주입 (Streamlit 버그 우회)
+                color_style = f"""
+                <style>
+                div[data-testid*="stTextInput"] input[key="{cell_key}"] {{
+                    color: {cell_color} !important;
+                }}
+                </style>
+                """
+                st.markdown(color_style, unsafe_allow_html=True)
+                
+                # 위젯을 st.columns 안에 넣지 않고 순서대로 생성합니다.
+                # 컨테이너 없이 위젯만 생성하고, 위젯을 감싸는 div를 CSS로 제어합니다.
+                st.text_input(" ", 
+                              value=current_val, 
+                              max_chars=1, 
+                              key=cell_key, 
+                              on_change=update_cell_value, 
+                              args=(i, j),
+                              label_visibility="collapsed",
+                              placeholder=" ")
+    
+    # 이 부분은 st.columns를 사용하지 않으므로 삭제
+    # st.markdown(all_cells_html, unsafe_allow_html=True)
+    
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("---")
             
