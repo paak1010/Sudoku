@@ -100,7 +100,7 @@ def initialize_session_state():
         st.session_state.cell_colors = {}
         st.session_state.initialized = True
         
-        # 첫 실행 시 초기 퍼즐 생성. st.rerun()은 호출하지 않아 안정성을 높임.
+        # 첫 실행 시 초기 퍼즐 생성. st.rerun() 없음
         shuffle_click(initial_run=True) 
 
 def shuffle_click(initial_run=False):
@@ -210,7 +210,7 @@ def main_app():
                              key='difficulty_prob_input', 
                              label_visibility="collapsed")
     
-    # 타이머 표시 (안전한 세션 접근을 위해 .get() 사용)
+    # 타이머 표시 (안전한 세션 접근)
     game_start_time = st.session_state.get('game_start_time')
     timer_running = st.session_state.get('timer_running', False)
     
@@ -220,11 +220,9 @@ def main_app():
         seconds = int(elapsed_time.total_seconds() % 60)
         time_display = f"{minutes:02d}:{seconds:02d}"
         
-        # 실시간 타이머 업데이트를 위해 앱 전체를 재실행
-        # 이는 Streamlit의 기본 동작이며, 1초에 한 번만 실행되도록 설정하는 방법이 가장 효율적입니다.
-        # 이 코드 블록이 실행될 때마다 st.rerun()이 없어도 업데이트됩니다.
-        # 그러나, 초 단위로 타이머를 강제 업데이트하기 위해 st.rerun()을 사용합니다.
-        st.rerun()
+        # 실시간 타이머 업데이트를 위한 강제 재실행 (주석 처리하여 안정성 우선)
+        # st.rerun() 
+        
     else:
         time_display = st.session_state.get('time_finished_display', "00:00")
         
@@ -240,8 +238,8 @@ def main_app():
 
     
     for i in range(9):
-        # 9개의 균등한 컬럼을 생성합니다.
-        cols = st.columns(9, gap="TINY") 
+        # 9개의 균등한 컬럼을 생성합니다. (gap="TINY" 제거)
+        cols = st.columns(9) 
         
         for j in range(9):
             is_initial_cell = (i, j) in st.session_state.initial_cells
