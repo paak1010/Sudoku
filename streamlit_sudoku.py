@@ -183,10 +183,10 @@ def complete_test_click():
                 st.session_state.cell_colors[(i, j)] = 'black'
 
     if is_correct:
-        st.session_state.result_message = f"🎉 정답입니다! 퍼즐을 풀었습니다. 소요 시간: {current_time_display}"
+        st.session_state.result_message = f"🎉 정답입니다! 소요 시간: {current_time_display}"
         st.balloons()
     else:
-        st.session_state.result_message = "❌ 아쉽지만, 정답이 아닙니다. 잘못된 셀이 빨간색으로 표시됩니다."
+        st.session_state.result_message = "❌ 아쉽지만, 정답이 아닙니다. "
         
     st.rerun() 
 
@@ -196,7 +196,7 @@ def main_app():
     initialize_session_state()
     st.markdown(CELL_STYLE, unsafe_allow_html=True) 
     
-    st.title("Streamlit Sudoku 🧩")
+    st.title("Streamlit 스도쿠 버전")
     
     # --- 컨트롤 패널 ---
     col_shuffle, col_prob_label, col_prob_edit, col_timer, col_finish = st.columns([1.5, 0.8, 1, 1.5, 1.5])
@@ -303,3 +303,4 @@ def main_app():
             
 if __name__ == "__main__":
     main_app()
+
