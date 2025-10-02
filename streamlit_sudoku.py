@@ -1,6 +1,7 @@
 import streamlit as st
 import random
 from datetime import datetime
+import time # 타이머 업데이트를 위해 time 모듈 추가
 
 # --- 📐 디자인 상수 ---
 CELL_SIZE_PX = 45 # 셀의 크기 (정사각형)
@@ -18,7 +19,7 @@ div[data-testid="stTextInput"] > label {{
     display: none; /* 레이블 숨김 */
 }}
 
-/* 🏆 버튼 스타일 유지 (PyQt5의 버튼과 유사하게) 🏆 */
+/* 🏆 버튼 스타일 유지 🏆 */
 .stButton > button {{
     background-color: #4CAF50;
     color: white;
@@ -55,7 +56,7 @@ div[data-testid="stTextInput"] > label {{
     padding: 0;
     margin: 0;
     text-align: center;
-    vertical-align: top; /* 입력 필드 정렬을 위해 top으로 설정 */
+    vertical-align: top; 
     border: 1px solid #ccc; /* 얇은 기본 테두리 */
 }}
 
@@ -79,7 +80,7 @@ div[data-testid="stTextInput"] > label {{
     color: black;
     font-weight: bold;
     font-size: 1.2em;
-    line-height: {CELL_SIZE_PX}px; /* 텍스트 수직 중앙 정렬 */
+    line-height: {CELL_SIZE_PX}px; 
 }}
 
 /* 입력 필드 스타일: Streamlit input 위젯의 내부 input 태그를 제어 */
@@ -92,7 +93,6 @@ div[data-testid="stTextInput"] > label {{
     text-align: center;
     font-weight: bold;
     font-size: 1.2em;
-    /* Streamlit이 생성한 input 태그의 스타일을 덮어씁니다. */
 }}
 
 /* Timer Label (PyQt5의 label) */
@@ -117,7 +117,7 @@ div[data-testid="stTextInput"] > label {{
 </style>
 """
 
-# 스도쿠 초기 정답판 (변경 없음)
+# 스도쿠 초기 정답판 
 INITIAL_SOLUTION = [
     ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
     ["4", "5", "6", "7", "8", "9", "1", "2", "3"],
@@ -133,27 +133,36 @@ INITIAL_SOLUTION = [
 # --- 게임 상태 초기화 및 로직 함수 ---
 
 def initialize_session_state():
-    # 'initialized' 플래그가 없으면 세션 상태 초기화
     if 'initialized' not in st.session_state:
         st.session_state.initial_solution = INITIAL_SOLUTION
         st.session_state.difficulty_prob = 0.7
-        st.session_state.result_message = "버튼을 클릭하고 1~9사이의 정수를 입력하세요, Finish를 누르면 채점 결과를 알려드립니다."
+        st.session_state.result_message = "Shuffle 버튼을 눌러 게임을 시작하세요"
         st.session_state.board = [[""] * 9 for _ in range(9)]
         st.session_state.correct_board = [[""] * 9 for _ in range(9)]
-        st.session_state.game_start_time = datetime.now()
+        # 시작 시간 대신, 경과 시간(seconds_elapsed)을 저장합니다.
+        st.session_state.seconds_elapsed = 0
+        st.session_state.last_time_check = datetime.now()
         st.session_state.timer_running = False
         st.session_state.time_finished_display = "00:00"
         st.session_state.initial_cells = set()
         st.session_state.cell_colors = {}
         st.session_state.initialized = True
         shuffle_click(initial_run=True)
-    elif st.session_state.timer_running:
-        # 타이머 업데이트를 위해 지속적인 rerun 유도
-        # (Streamlit Cloud 환경에서 타이머 정확도를 높이기 위한 조치)
-        st.experimental_rerun()
+    
+    # 타이머가 실행 중이면 시간을 업데이트하고 rerun을 요청합니다.
+    if st.session_state.timer_running:
+        now = datetime.now()
+        # 경과 시간 계산 및 저장
+        delta = now - st.session_state.last_time_check
+        st.session_state.seconds_elapsed += delta.total_seconds()
+        st.session_state.last_time_check = now
+        
+        # 1초마다 업데이트를 위해 지연 후 rerun 호출
+        time.sleep(1) 
+        st.rerun() # ★★★ 수정된 함수 st.rerun() 사용 ★★★
+
 
 def shuffle_click(initial_run=False):
-    # 난이도 입력값(pEdit) 반영
     try:
         prob = float(st.session_state.get('difficulty_prob_input', st.session_state.difficulty_prob))
         st.session_state.difficulty_prob = max(0.0, min(1.0, prob))
@@ -184,49 +193,46 @@ def shuffle_click(initial_run=False):
     st.session_state.board = new_board
     st.session_state.initial_cells = initial_cells
     
-    st.session_state.game_start_time = datetime.now()
+    # 타이머 초기화 및 시작
+    st.session_state.seconds_elapsed = 0
+    st.session_state.last_time_check = datetime.now()
     st.session_state.timer_running = True
     st.session_state.result_message = "빈 칸에 1~9 사이의 숫자를 입력하세요."
     st.session_state.time_finished_display = "00:00"
     st.rerun()
 
 def update_cell_value(r, c):
-    # 사용자 입력 처리 및 색상 업데이트
     new_val = st.session_state[f"cell_{r}_{c}"].strip()
     
     if new_val.isdigit() and 1 <= int(new_val) <= 9:
         st.session_state.board[r][c] = new_val
-        st.session_state.cell_colors[(r, c)] = 'red' # PyQt5 로직: 입력 시 빨간색
+        st.session_state.cell_colors[(r, c)] = 'red'
     elif new_val == "":
         st.session_state.board[r][c] = ""
         st.session_state.cell_colors[(r, c)] = 'red'
     else:
-        # 유효하지 않은 입력 시 이전 값 유지
         st.session_state[f"cell_{r}_{c}"] = st.session_state.board[r][c]
         
 def complete_test_click():
-    # 채점 로직 (PyQt5의 CompleteTestClick과 동일)
     st.session_state.timer_running = False
 
-    is_correct = True
-    elapsed_time = datetime.now() - st.session_state.game_start_time
-    minutes = int(elapsed_time.total_seconds() // 60)
-    seconds = int(elapsed_time.total_seconds() % 60)
+    total_seconds = int(st.session_state.seconds_elapsed)
+    minutes = total_seconds // 60
+    seconds = total_seconds % 60
     current_time_display = f"{minutes:02d}:{seconds:02d}"
     st.session_state.time_finished_display = current_time_display
 
+    is_correct = True
     for i in range(9):
         for j in range(9):
             current_val = st.session_state.board[i][j]
             correct_val = st.session_state.correct_board[i][j]
             
-            # 채점 결과에 따라 색상 변경
             st.session_state.cell_colors[(i, j)] = 'black' if current_val == correct_val else 'red'
 
             if current_val != correct_val:
                 is_correct = False
     
-    # 고정 셀은 항상 검은색 유지
     for r, c in st.session_state.initial_cells:
         st.session_state.cell_colors[(r, c)] = 'black'
 
@@ -241,29 +247,29 @@ def complete_test_click():
 # --- 메인 UI 구성 ---
 
 def main_app():
+    # initialize_session_state 함수에서 이미 st.rerun()을 호출하여 타이머를 업데이트합니다.
     initialize_session_state()
     st.markdown(CELL_STYLE, unsafe_allow_html=True)
     
     st.title("Streamlit Sudoku")
     
-    # --- 컨트롤 패널 (PyQt5 UI 배치에 가깝게) ---
+    # --- 컨트롤 패널 ---
     col_shuffle, col_prob_label, col_prob_edit, col_timer, col_finish = st.columns([1.5, 0.8, 1, 1.5, 1.5])
     
     if col_shuffle.button("Shuffle", key="ShuffleButton", use_container_width=True):
         shuffle_click()
     
-    # 난이도 입력 (pEdit)
     col_prob_label.markdown("<div style='text-align: right; margin-top: 10px; font-size: 13px;'>빈칸 확률 (0~1):</div>", unsafe_allow_html=True)
     col_prob_edit.text_input("난이도 확률", 
                              value=f"{st.session_state.difficulty_prob:.2f}", 
                              key='difficulty_prob_input', 
                              label_visibility="collapsed")
     
-    # 타이머 표시 (label)
+    # 타이머 표시 로직
     if st.session_state.timer_running:
-        elapsed_time = datetime.now() - st.session_state.game_start_time
-        minutes = int(elapsed_time.total_seconds() // 60)
-        seconds = int(elapsed_time.total_seconds() % 60)
+        total_seconds = int(st.session_state.seconds_elapsed)
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
         time_display = f"{minutes:02d}:{seconds:02d}"
     else:
         time_display = st.session_state.time_finished_display
@@ -276,33 +282,26 @@ def main_app():
     # --- 결과 메시지 ---
     st.markdown("---")
     
-    # PyQt5의 textEdit (안내 메시지)
+    # PyQt5의 textEdit (안내 메시지)와 resEdit (결과 메시지) 통합
     st.markdown(f"<div class='info-message'>{st.session_state.result_message}</div>", unsafe_allow_html=True)
-
-    # PyQt5의 resEdit (채점 결과 메시지)
-    st.markdown(f"<div style='text-align: center; margin-top: 10px; font-weight: bold;'>{st.session_state.result_message}</div>", unsafe_allow_html=True)
     
     st.markdown("---")
     
     # --- 스도쿠 보드 UI (HTML 테이블 렌더링) ---
     
-    # 1. 81개의 Streamlit text_input 위젯을 먼저 생성합니다.
-    #    (Streamlit은 위젯의 순서가 중요하므로, HTML 렌더링 전에 생성해야 합니다.)
-    
-    st.markdown('<div style="display:none">', unsafe_allow_html=True) # 위젯을 숨기는 컨테이너
-    input_widgets = {}
+    # 1. 81개의 Streamlit text_input 위젯을 숨겨진 상태로 생성
+    st.markdown('<div style="display:none">', unsafe_allow_html=True) 
     for i in range(9):
         for j in range(9):
             cell_key = f"cell_{i}_{j}"
-            # Streamlit 위젯 생성
-            input_widgets[(i, j)] = st.text_input(" ", 
-                                                  value=st.session_state.board[i][j], 
-                                                  max_chars=1, 
-                                                  key=cell_key, 
-                                                  on_change=update_cell_value, 
-                                                  args=(i, j),
-                                                  label_visibility="collapsed",
-                                                  placeholder=" ")
+            st.text_input(" ", 
+                          value=st.session_state.board[i][j], 
+                          max_chars=1, 
+                          key=cell_key, 
+                          on_change=update_cell_value, 
+                          args=(i, j),
+                          label_visibility="collapsed",
+                          placeholder=" ")
     st.markdown('</div>', unsafe_allow_html=True)
     
     # 2. HTML 테이블 구조 생성
@@ -324,8 +323,6 @@ def main_app():
             else:
                 # 입력 가능한 셀: CSS를 이용해 Streamlit input 위젯을 원하는 위치에 표시
                 
-                # Streamlit 위젯의 HTML을 가져오기 위한 마크다운
-                # 이 부분이 Streamlit의 한계를 우회하는 핵심입니다.
                 # 위젯의 텍스트 색상을 동적으로 변경하기 위한 CSS 삽입
                 html_table += f"""
                 <style>
